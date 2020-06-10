@@ -1,9 +1,7 @@
 import json
 import requests
-import ijson
 
 
-##########################  This func pulls all the keys in a json output    ####################
 def extract_values(obj, key):
     """Pull all values of specified key from nested JSON."""
     arr = []
@@ -43,17 +41,22 @@ for i in data['result']:
 
     site_name = i['name']
     serial = i['system_set']
+
     # Now we get a piece of data from each site and its serial
 
     for sn in serial:
         ##########################  Hostname ,model         #########################################
-        host_params = "fields=serial_number,model,name&serial_number=eq:" + str(sn)
+        host_params = "fields=serial_number,comments,dark,model,name&serial_number=eq:" + str(sn)
         host_url = "https://inventory.infinidat.com/api/rest/systems/"
 
         r_host = requests.get(host_url, headers=headers, params=host_params)
         r_host_data = r_host.json()
+
         hostname = r_host_data["result"][0]["name"]
         model = r_host_data["result"][0]["model"]
+        dark = r_host_data["result"][0]["dark"]
+        comment = extract_values(r_host_data, 'text')
+
         #############################################################################################
 
         ##########################  Enter New Extraction (example below) Here ######################
@@ -66,8 +69,9 @@ for i in data['result']:
         #############################################################################################
 
         ##########################  Output Results Here     #########################################
-        print('{:7}' '{:8}' '{:30}' '{:15}' \
-              .format(model, \
-                      str(sn), \
-                      hostname + " ", \
+        print('{:7}' '{:15}' '{:8}' '{:30}' '{:15}'
+              .format(model, "Dark: " + str(dark),
+                      str(sn),
+                      hostname + " ",
                       site_name))
+        print("Comment: " + str(comment) + "\n")

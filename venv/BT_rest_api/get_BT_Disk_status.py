@@ -1,6 +1,9 @@
 import json
 import requests
 import ijson
+from colorama import Fore, Back, Style
+import re
+
 
 def extract_values(obj, key):
     """Pull all values of specified key from nested JSON."""
@@ -22,83 +25,116 @@ def extract_values(obj, key):
     results = extract(obj, arr, key)
     return results
 
+
 # setup stuff
-mytoken='tpuyyTJpfj1N'
-headers=headers={'X-API-Token': mytoken, 'Accept-Encoding': 'identity'}
-
-
+mytoken = 'tpuyyTJpfj1N'
+headers = headers = {'X-API-Token': mytoken, 'Accept-Encoding': 'identity'}
 
 sys_url = "https://inventory.infinidat.com/api/rest/systems/"
 alert_url = "https://inventory.infinidat.com/api/rest/alerts/"
-#site_params_alert_against = "system=eq:$abox&fields=component,code"
+# site_params_alert_against = "system=eq:$abox&fields=component,code"
 
 
 ##################################################################################
 site_url = "https://inventory.infinidat.com/api/rest/customers/site/"
 site_params = "fields=name,system_set,name&account_name=eq:British Telecom"
 
-r_sn=requests.get( site_url , headers=headers, params=site_params)
-data=r_sn.json()
+r_sn = requests.get(site_url, headers=headers, params=site_params)
+data = r_sn.json()
+########################  Print the thresholds  ###############################################
+print(''' DRIVE_REPLACEMENT_NEEDED      URGENT_DRIVE_REPLACEMENT_NEEDED
+ F6xxx - 6 or more             F6xxx - 8 or more                ## MAX Fail = 10 ## Infinispare enabled 12
+ F4xxx - 3 or more             F4xxx - 4 or more                ## MAX Fail = 6  ## Infinispare enabled 8
+ F2xxx - 2 or more             F2xxx - 2 or more                ## MAX Fail = 4  ## Infinispare enabled 6
+ F1xxx - 2 or more             F1xxx - 2 or more                ## MAX Fail = 4  ## Infinispare enabled 6
+                 ''')
 
 
+######################   Main   #############################################################
 for i in data['result']:
 
-       site_name = i['name']
-       serial = i['system_set']
-       # Now we get a piece of data from each site and its serial
+    site_name = i['name']
+    serial = i['system_set']
+    # Now we get a piece of data from each site and its serial
 
-       for sn in serial:
-              ########################## Local Drive Failures ###########################################
-              site_params_node_drv = "system_serial=eq:" + str(sn) + "&state=ne:OK&state=ne:UNCONFIGURED"
-              event_url_local_drv = "https://inventory.infinidat.com/api/rest/components/localdrive/"
+    for sn in serial:
+        ########################## Local Drive Failures ###########################################
+        site_params_node_drv = "system_serial=eq:" + str(sn) + "&state=ne:OK&state=ne:UNCONFIGURED"
+        event_url_local_drv = "https://inventory.infinidat.com/api/rest/components/localdrive/"
 
-              r_node_drv = requests.get(event_url_local_drv, headers=headers, params=site_params_node_drv)
-              node_drv_data = r_node_drv.json()
-              node_drv_failures = len(node_drv_data['result'])
-              #############################################################################################
+        r_node_drv = requests.get(event_url_local_drv, headers=headers, params=site_params_node_drv)
+        node_drv_data = r_node_drv.json()
+        node_drv_failures = len(node_drv_data['result'])
 
-              ########################## Enclosure Drive Failures ##########################################
-              site_params_encl_drv = "sort=parent_index&system_serial=eq:" + str(sn) + "&state=ne:ACTIVE"
-              event_url_encl_drv = "https://inventory.infinidat.com/api/rest/components/enclosuredrive/"
+        ncomp = []
+        for item in node_drv_data['result']:
+            ncomp.append("N" + str(item['parent_index']) + "D" + str(item['index']))
+        #############################################################################################
 
-              r_encl_drv = requests.get(event_url_encl_drv, headers=headers, params=site_params_encl_drv)
-              encl_drv_data = r_encl_drv.json()
-              encl_failures= len(encl_drv_data['result'])
-              #############################################################################################
+        ########################## Enclosure Drive Failures ##########################################
+        site_params_encl_drv = "sort=parent_index&system_serial=eq:" + str(sn) + "&state=ne:ACTIVE"
+        event_url_encl_drv = "https://inventory.infinidat.com/api/rest/components/enclosuredrive/"
 
-              ##########################  Hostname ,model         ##########################################
-              host_params="fields=serial_number,model,name&serial_number=eq:" + str(sn)
-              host_url="https://inventory.infinidat.com/api/rest/systems/"
+        r_encl_drv = requests.get(event_url_encl_drv, headers=headers, params=site_params_encl_drv)
+        encl_drv_data = r_encl_drv.json()
+        encl_failures = len(encl_drv_data['result'])
+        ecomp = []
+        for item in encl_drv_data['result']:
+            ecomp.append("E" + str(item['parent_index']) + "D" + str(item['index']))
+        #############################################################################################
 
-              r_host=requests.get(host_url, headers=headers, params=host_params)
-              r_host_data=r_host.json()
-              hostname = r_host_data["result"][0]["name"]
-              model = r_host_data["result"][0]["model"]
-              #############################################################################################
+        ##########################  Hostname ,model         ##########################################
+        host_params = "fields=serial_number,model,name&serial_number=eq:" + str(sn)
+        host_url = "https://inventory.infinidat.com/api/rest/systems/"
 
-              ##########################   Event   ########################################################
-              alert_comp_params= "fields=component,code&system=eq:" + str(sn)
-              alert_comp_url="https://inventory.infinidat.com/api/rest/alerts/"
+        r_host = requests.get(host_url, headers=headers, params=host_params)
+        r_host_data = r_host.json()
+        hostname = r_host_data["result"][0]["name"]
+        model = r_host_data["result"][0]["model"]
+        #############################################################################################
 
-              r_alert = requests.get(alert_comp_url, headers=headers, params=alert_comp_params)
-              r_alert_data = r_alert.json()
-              #print(r_alert_data)
+        ##########################   Event   ########################################################
+        alert_comp_params = "fields=component,code&system=eq:" + str(sn)
+        alert_comp_url = "https://inventory.infinidat.com/api/rest/alerts/"
 
-              comp = ' '.join(extract_values(r_alert_data, "component"))
+        r_alert = requests.get(alert_comp_url, headers=headers, params=alert_comp_params)
+        r_alert_data = r_alert.json()
+        #print(r_alert_data)
+        #print(r_alert_data)
 
-              code = ' '.join(extract_values(r_alert_data, "code"))
-              code = code.replace("ENCLOSURE_DRIVE_INACTIVE", "")
+        comp = ','.join(extract_values(r_alert_data, "component"))
 
-              #print(comp, code)
+        code = ' '.join(extract_values(r_alert_data, "code"))
+        code = code.replace("ENCLOSURE_DRIVE_INACTIVE", "")
 
-              #############################################################################################
+        # Look for all these events
+        p = re.compile('DRIVE_REPLACEMENT_NEEDED', re.IGNORECASE)
+        m = p.search(code)
 
-              print('{:7}' '{:8}' '{:12}' '{:15}' '{:30}' '{:12}' '{:6}' '{}'\
-                      .format(model,\
-                               str(sn),\
-                               "Node hdd:" + str(node_drv_failures),\
-                               "Encl hdd: " + str(encl_failures),\
-                               hostname + " ",\
-                               site_name + " ",\
-                               comp + " ",\
-                               code))
+        if m:
+            print(Fore.RED + '{:7}' '{:8}' '{:12}' '{:15}' '{:30}' '{:12}' '{:6}' '{}'
+                  .format(model,
+                          str(sn),
+                          "Node hdd:" + str(node_drv_failures),
+                          "Encl hdd: " + str(encl_failures),
+                          hostname + " ",
+                          site_name + " ",
+                          ",".join(ecomp) + " ",
+                          ",".join(ncomp) + " ",
+                          ))
+
+        else:
+            #print(Style.RESET_ALL)
+            print(Style.RESET_ALL + '{:7}' '{:8}' '{:12}' '{:15}' '{:30}' '{:12}' '{:6}' '{}'
+                  .format(model,
+                          str(sn),
+                          "Node hdd:" + str(node_drv_failures),
+                          "Encl hdd: " + str(encl_failures),
+                          hostname + " ",
+                          site_name + " ",
+                          ",".join(ecomp) + " ",
+                          ",".join(ncomp) + " ",
+                          ))
+
+
+        #############################################################################################

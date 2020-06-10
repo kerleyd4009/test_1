@@ -1,0 +1,68 @@
+import json
+import requests
+import ijson
+
+
+# setup stuff
+mytoken = 'tpuyyTJpfj1N'
+headers = {'X-API-Token': mytoken, 'Accept-Encoding': 'identity'}
+
+sys_url = "https://inventory.infinidat.com/api/rest/systems/"
+
+
+##################################################################################
+site_url = "https://inventory.infinidat.com/api/rest/customers/site/"
+site_params = "fields=name,system_set,name&account_name=eq:British Telecom"
+
+r_sn = requests.get(site_url, headers=headers, params=site_params)
+data = r_sn.json()
+
+for i in data['result']:
+
+    site_name = i['name']
+    serial = i['system_set']
+    # Now we get a piece of data from each site and its serial
+
+    for sn in serial:
+
+        ##########################  Hostname ,model         #########################################
+        #host_params = "fields=serial_number,model,name&serial_number=eq:" + str(sn)
+        #host_url = "https://inventory.infinidat.com/api/rest/systems/"
+
+        #r_host = requests.get(host_url, headers=headers, params=host_params)
+        #r_host_data = r_host.json()
+        #hostname = r_host_data["result"][0]["name"]
+        #model = r_host_data["result"][0]["model"]
+        #############################################################################################
+
+        ##########################  Enter New Extraction (example below) Here ######################
+
+        ##https://event-store-02.aws.infinidat.com/search/1162/?sort=&page=4&page_size=100&levels=2%2C3%2C4%2C5&query=&code=VOLUME_CREATED&range=9999
+        #
+        print(str(sn))
+        vmytoken = '3aawHwNmByea'
+        vheaders = headers = {'X-API-Token': vmytoken, 'Accept-Encoding': 'identity'}
+        #
+        vol_url = "https://event-store-02.aws.infinidat.com/api/rest/events/"
+        vol_params = "system_serial=eq:" + str(sn) + "&page_size=1000"
+        #+ "&code=eq:VOLUME_CREATED&page_size=1000"
+
+        v_data = requests.get(vol_url, headers=vheaders, params=vol_params)
+        v_data = v_data.json()
+        for iev in data['result']:
+
+
+            code = iev['code']
+
+
+            print(code)
+        #
+        #
+        # ############################################################################################
+
+        ##########################  Output Results Here     #########################################
+        #print('{:7}' '{:8}' '{:30}' '{:15}' \
+        #      .format(model, \
+        #              str(sn), \
+        #              hostname + " ", \
+        #              site_name))
