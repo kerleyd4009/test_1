@@ -95,5 +95,4 @@ for i in data['result']:
                   "Sy_HB: " + str(sys_hb_time),
                   "Sa_HB: " + str(sa_hb_time),
                   "RSS Tun: " + str(rss_time)
-
                   ))

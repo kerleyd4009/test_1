@@ -15,7 +15,7 @@ r_sales_data = r_sales.json()
 ###############################################################################
 
 site_url = "https://inventory.infinidat.com/api/rest/systems/"
-site_params = "fields=serial_number,site,account,model,name&page_size=9000"
+site_params = "fields=serial_number,site,account,model,version,name&page_size=9000"
 
 site_data = requests.get(site_url, headers=headers, params=site_params)
 r_site_data = site_data.json()
@@ -62,11 +62,13 @@ for sn in r_sales_data['result']:
 
     for site in r_site_data['result']:
         if sn['serial_number'] == site['serial_number']:
-            site_info = (str(sn['serial_number']), \
-                         str(site['model']), \
-                         str(site['name']), \
-                         str(site['account']['name']), \
-                         str(site['account']['country_name']))
+            site_info = (str(sn['serial_number']),
+                         str(site['model']),
+                         str(site['version']),
+                         str(site['name']),
+                         str(site['account']['name']),
+                         str(site['account']['country_name']
+                             ))
 
     for ta in TA_data['result']:
         if sn['serial_number'] == ta['system']:
