@@ -27,14 +27,16 @@ def extract_values(obj, key):
 
 
 #
-# References:https://wiki.infinidat.com/display/public/SUP/Fixing+Heartbeat+Missing+Alerts+In+Inventory
-# 1: sys_hb_time  SY HB alert after 49 hours/ freq 24 hrs   NO_HEARTBEAT_RECEIVED
-# 2: sa_hb_time   SA HB alert after 8 days / freq 1 week      NO_SA_HEARTBEAT_RECEIVED
-# 3: rss_time     SA Keepalive RSS (Remote Support Keepalive) NO_REMOTE_SUPPORT_# KEEPALIVE_RECEIVED alert after 24 hours / freq 4 hrs
-# 4:              System Keepalive _SYSTEM_KEEPALIVE_RECEIVED alert after 12 hours / freq 4 hrs
+print('''References:https://wiki.infinidat.com/display/public/SUP/Fixing+Heartbeat+Missing+Alerts+In+Inventory 
+1: SY HB   alert after 49 hours check every 24 hrs  NO_HEARTBEAT_RECEIVED     we red alert on 48 hours 
+2: SA HB   alert after 8 days   check every 1 week  NO_SA_HEARTBEAT_RECEIVED  we red alert on 7 days 
+3: SA->RSS alert after 24 hours check every 4 hrs   NO_REMOTE_SUPPORT_ alert  we red alert over 4 hours 
+ 
+''')
+# Need to look into this : System Keepalive _SYSTEM_KEEPALIVE_RECEIVED alert after 12 hours / freq 4 hrs
 
 
-# setup stuff
+
 mytoken = 'tpuyyTJpfj1N'
 headers = {'X-API-Token': mytoken, 'Accept-Encoding': 'identity'}
 
@@ -52,7 +54,6 @@ for i in data['result']:
 
     site_name = i['name']
     serial = i['system_set']
-    rss_alert = 0
 
     # Now we get a piece of data from each site and its serial
 
@@ -75,22 +76,43 @@ for i in data['result']:
         sa_sys = requests.get(sa_sys_url, headers=headers, params=sa_sys_params)
         sa_sys_data = sa_sys.json()
 
-        # First get System Heartbeat
+        ############################  SYS Heartbeat  ###############################################
         sys_hb_time = sa_sys_data["result"][0]["last_heartbeat_at"]
         if sys_hb_time is None:
             sys_hb_time = "None"
+            sys_hb_time_alert = 1
         else:
             sys_hb_time = datetime.datetime.strptime(sa_sys_data["result"][0]["last_heartbeat_at"],
-                                                     "%Y-%m-%dT%H:%M:%SZ")
+                                                         "%Y-%m-%dT%H:%M:%SZ")
             sys_hb_time = sys_hb_time.strftime("%Y-%m-%d %H:%M")
 
+            sys = (datetime.datetime.now() - datetime.datetime.strptime(sys_hb_time,"%Y-%m-%d %H:%M")).total_seconds()
+            if sys > 172800:
+             sys_hb_time_alert = 1
+             # we alert after 49hrs, so we test at 48 hours (172800 secs)
+            else:
+             sys_hb_time_alert = 0
+        ############################  SA Heartbeat  ###############################################
         sa_hb_time = sa_sys_data["result"][0]["last_sa_heartbeat_at"]
         if sa_hb_time is None:
             sa_hb_time = "none"
+            sa_hb_time_alert = 1
+
         else:
             sa_hb_time = datetime.datetime.strptime(sa_sys_data["result"][0]["last_sa_heartbeat_at"],
                                                     "%Y-%m-%dT%H:%M:%SZ")
             sa_hb_time = sa_hb_time.strftime("%Y-%m-%d %H:%M")
+
+            sa = (datetime.datetime.now() - datetime.datetime.strptime(sa_hb_time, "%Y-%m-%d %H:%M")).total_seconds()
+            if sa > 604800:
+              sa_hb_time_alert = 1
+              # we alert after 8 days, so we test at 7 days (604800 secs)
+
+            else:
+               sa_hb_time_alert = 0
+
+
+
 
         ########################## Remote Support Keepalive ######################
         eventtoken = '3aawHwNmByea'
@@ -118,33 +140,42 @@ for i in data['result']:
             rss_alert = 1
         else:
             timestamp = extract_values(rss_data, 'timestamp')
-            # print(timestamp)
             latest_timestamp = str(max(timestamp))
-            # print(str(latest_timestamp))
             rss_time = datetime.datetime.fromtimestamp(int(latest_timestamp[:10])).strftime("%Y-%m-%d %H:%M")
 
             #  Find the difference between now and the alert time, if greater thane alert period set text red
-            x = datetime.datetime.now()
-            y = datetime.datetime.fromtimestamp(int(latest_timestamp[:10]))
-            z = x - y
-            if z.seconds > 14400:
+            p = (datetime.datetime.now() - datetime.datetime.fromtimestamp(int(latest_timestamp[:10]))).total_seconds()
+            if p > 14400:
                 rss_alert = 1
                 # print(rss_alert)
             else:
                 rss_alert = 0
 
         ##########################  Output Results Here     #########################################
+        # Set the colours red here
         if rss_alert == 1:
-            p_rss_time = colored('Remote Keep: ' + str(rss_time), 'red')
+            p_rss_time = colored(str('SA Keep: ' + str(rss_time)), 'red')
         else:
-            p_rss_time = str('Remote Keep: ' + str(rss_time))
+            p_rss_time = str('SA Keep: ' + str(rss_time))
 
-        print('{:7}' '{:6}' '{:30}' '{:27}' '{:25}' '{:25}' '{}'
+        if sys_hb_time_alert == 1:
+            sys_hb_time = colored(str('Sys HB: ' + str(sys_hb_time)), 'red')
+        else:
+            sys_hb_time = str('Sys HB: ' + str(sys_hb_time))
+
+        if sa_hb_time_alert == 1:
+            sa_hb_time = colored(str('SA HB: ' + str(sa_hb_time)), 'red')
+        else:
+            sa_hb_time = str('SA HB: ' + str(sa_hb_time))
+
+        ####################################################################################################
+
+        print('{:7}' '{:6}' '{:30}' '{:27}' '{:30}' '{:30}' '{}'
               .format(model,
                       str(sn),
                       hostname + " ",
                       site_name,
-                      "Sy_HB: " + str(sys_hb_time),
-                      "Sa_HB: " + str(sa_hb_time),
+                      sys_hb_time,
+                      sa_hb_time,
                       p_rss_time
                       ))
