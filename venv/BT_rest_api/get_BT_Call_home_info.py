@@ -36,7 +36,6 @@ print('''References:https://wiki.infinidat.com/display/public/SUP/Fixing+Heartbe
 # Need to look into this : System Keepalive _SYSTEM_KEEPALIVE_RECEIVED alert after 12 hours / freq 4 hrs
 
 
-
 mytoken = 'tpuyyTJpfj1N'
 headers = {'X-API-Token': mytoken, 'Accept-Encoding': 'identity'}
 
@@ -83,15 +82,15 @@ for i in data['result']:
             sys_hb_time_alert = 1
         else:
             sys_hb_time = datetime.datetime.strptime(sa_sys_data["result"][0]["last_heartbeat_at"],
-                                                         "%Y-%m-%dT%H:%M:%SZ")
+                                                     "%Y-%m-%dT%H:%M:%SZ")
             sys_hb_time = sys_hb_time.strftime("%Y-%m-%d %H:%M")
 
-            sys = (datetime.datetime.now() - datetime.datetime.strptime(sys_hb_time,"%Y-%m-%d %H:%M")).total_seconds()
+            sys = (datetime.datetime.now() - datetime.datetime.strptime(sys_hb_time, "%Y-%m-%d %H:%M")).total_seconds()
             if sys > 172800:
-             sys_hb_time_alert = 1
-             # we alert after 49hrs, so we test at 48 hours (172800 secs)
+                sys_hb_time_alert = 1
+                # we alert after 49hrs, so we test at 48 hours (172800 secs)
             else:
-             sys_hb_time_alert = 0
+                sys_hb_time_alert = 0
         ############################  SA Heartbeat  ###############################################
         sa_hb_time = sa_sys_data["result"][0]["last_sa_heartbeat_at"]
         if sa_hb_time is None:
@@ -105,14 +104,11 @@ for i in data['result']:
 
             sa = (datetime.datetime.now() - datetime.datetime.strptime(sa_hb_time, "%Y-%m-%d %H:%M")).total_seconds()
             if sa > 604800:
-              sa_hb_time_alert = 1
-              # we alert after 8 days, so we test at 7 days (604800 secs)
+                sa_hb_time_alert = 1
+                # we alert after 8 days, so we test at 7 days (604800 secs)
 
             else:
-               sa_hb_time_alert = 0
-
-
-
+                sa_hb_time_alert = 0
 
         ########################## Remote Support Keepalive ######################
         eventtoken = '3aawHwNmByea'
@@ -153,7 +149,18 @@ for i in data['result']:
 
         ##########################  Output Results Here     #########################################
         # Set the colours red here
-        if rss_alert == 1:
+        # We need to ignore the below as the are ruled out by BT firewall, webex and ssh key needed
+        #
+        # F2240        1576        dy021ifb01_21CN_RoBT
+        # F2240        2750        dy021ifb02
+        # F2240        1575        ap021ifb01_21CN_RoBT
+        # F2240        2615        ap021ifb02_21CN_OR
+        # F2240        1577        by021ifb01_21CN_RoBT
+        # F2240        2902        oy021ifb02
+
+        if rss_alert == 1 and sn in {1576, 2750, 1575, 2615, 1577, 2902}:
+            p_rss_time = colored(str('SA Keep: ' + str(rss_time)) + '  Blocked BT Firewall', 'blue')
+        elif rss_alert == 1:
             p_rss_time = colored(str('SA Keep: ' + str(rss_time)), 'red')
         else:
             p_rss_time = str('SA Keep: ' + str(rss_time))
