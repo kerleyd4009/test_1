@@ -56,17 +56,12 @@ for i in data['result']:
         hostname = r_host_data["result"][0]["name"]
         model = r_host_data["result"][0]["model"]
         #############################################################################################
-        # contacts_site_params = "fields=name,email"
         contacts_url = "https://inventory.infinidat.com/api/rest/systems/" + str(sn) + "/contacts/"
 
-        # contacts = requests.get(contacts_url, headers=headers, params=contacts_site_params)
         contacts = requests.get(contacts_url, headers=headers)
         contacts_data = contacts.json()
-
         contact_name = contacts_data["result"]["Emergency"][0]["name"]
         contact_email = contacts_data["result"]["Emergency"][0]["email"]
-        # print(flatten(contacts_data, '//'))
-        # print(contact_name)
 
         ##########################  Enter New Extraction (example below) Here ######################
         # site_params_node_drv = "system_serial=eq:" + str(sn) + "&state=ne:OK&state=ne:UNCONFIGURED"
