@@ -1,6 +1,19 @@
 import json
+import parser
+
+import requests
 import requests
 import ijson
+import argparse
+
+parser = argparse.ArgumentParser(description="General Information")
+parser.add_argument('-s', '--serial', type=int, dest='serialnum', nargs="*", default='0',
+                    help='You must specify an account "-a" when specifying  a serial "-s" ')
+parser.add_argument('-a', '--account', dest='account', default='British Telecom',
+                    help='Please enclose account names with space with double quotes')
+args = parser.parse_args()
+
+
 
 
 ##########################  This func pulls all the keys in a json output    ####################
@@ -26,26 +39,7 @@ def extract_values(obj, key):
     return results
 
 
-# setup stuff
-mytoken = 'tpuyyTJpfj1N'
-headers = {'X-API-Token': mytoken, 'Accept-Encoding': 'identity'}
-
-sys_url = "https://inventory.infinidat.com/api/rest/systems/"
-alert_url = "https://inventory.infinidat.com/api/rest/alerts/"
-
-##################################################################################
-site_url = "https://inventory.infinidat.com/api/rest/customers/site/"
-site_params = "fields=name,system_set,name&account_name=eq:British Telecom"
-
-r_sn = requests.get(site_url, headers=headers, params=site_params)
-data = r_sn.json()
-
-for i in data['result']:
-
-    site_name = i['name']
-    serial = i['system_set']
-    # Now we get a piece of data from each site and its serial
-
+def ShowInfo(site_name, serial):
     for sn in serial:
         ##########################  Hostname ,model         #########################################
         host_params = "fields=serial_number,model,name&serial_number=eq:" + str(sn)
@@ -56,10 +50,12 @@ for i in data['result']:
         hostname = r_host_data["result"][0]["name"]
         model = r_host_data["result"][0]["model"]
         #############################################################################################
+
         contacts_url = "https://inventory.infinidat.com/api/rest/systems/" + str(sn) + "/contacts/"
 
         contacts = requests.get(contacts_url, headers=headers)
         contacts_data = contacts.json()
+
         contact_name = contacts_data["result"]["Emergency"][0]["name"]
         contact_email = contacts_data["result"]["Emergency"][0]["email"]
 
@@ -81,3 +77,38 @@ for i in data['result']:
                       site_name,
                       contact_name,
                       contact_email))
+
+
+# setup stuff
+mytoken = 'tpuyyTJpfj1N'
+headers = {'X-API-Token': mytoken, 'Accept-Encoding': 'identity'}
+
+sys_url = "https://inventory.infinidat.com/api/rest/systems/"
+alert_url = "https://inventory.infinidat.com/api/rest/alerts/"
+
+##################################################################################
+site_url = "https://inventory.infinidat.com/api/rest/customers/site/"
+site_params = "fields=name,system_set,name&account_name=eq:" + args.account
+
+r_sn = requests.get(site_url, headers=headers, params=site_params)
+data = r_sn.json()
+
+mySite_Arrays = {}
+
+for i in data['result']:
+    site_name = i['name']
+    serial = i['system_set']
+    mySite_Arrays[site_name] = serial
+
+if args.serialnum != 0:
+
+    for masers in args.serialnum:
+        for site_name, serial in mySite_Arrays.items():
+            if masers in serial:
+                print(site_name)
+                #ShowInfo(site_name, mysn)
+
+
+else:
+    for site_name, serial in mySite_Arrays.items():
+        ShowInfo(site_name, serial)
