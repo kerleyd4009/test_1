@@ -25,7 +25,6 @@ for i in data['result']:
     serial = i['system_set']
     # Now we get a piece of data from each site and its serial
 
-
     for sn in serial:
         ##########################  Hostname ,model         #########################################
         host_params = "fields=serial_number,model,name&serial_number=eq:" + str(sn)
@@ -45,22 +44,21 @@ for i in data['result']:
         bat_data = ups_node_bat.json()
 
         for indx in range(0, 3):
-             parent_index = bat_data["result"][indx]["parent_index"]
-             vendor = bat_data["result"][indx]["vendor"]
-             battery_date = bat_data["result"][indx]["battery_date"]
-             bats[indx] = (parent_index, vendor, battery_date)
+            parent_index = bat_data["result"][indx]["parent_index"]
+            vendor = bat_data["result"][indx]["vendor"]
+            battery_date = bat_data["result"][indx]["battery_date"]
+            bats[indx] = (parent_index, vendor, battery_date)
 
         # node_drv_failures = len(node_drv_data['result'])
         #############################################################################################
 
         ##########################  Output Results Here     #########################################
 
-
         print('{:7}' '{:8}' '{:30}' '{:30}' '{}' \
               .format(model, \
                       str(sn), \
-                      "UPS"+str(bats[0][0]) + " " + str(bats[0][1]) + " "+ " " + str(bats[0][2]) + "   "+\
-                      "UPS"+str(bats[1][0]) + " " + str(bats[1][1]) + " "+ " " + str(bats[1][2]) + "   "+\
-                      "UPS"+str(bats[2][0]) + " " + str(bats[2][1]) + " "+ " " + str(bats[2][2]) + "   ",\
+                      "UPS" + str(bats[0][0]) + " " + str(bats[0][1]) + " " + " " + str(bats[0][2]) + "   " + \
+                      "UPS" + str(bats[1][0]) + " " + str(bats[1][1]) + " " + " " + str(bats[1][2]) + "   " + \
+                      "UPS" + str(bats[2][0]) + " " + str(bats[2][1]) + " " + " " + str(bats[2][2]) + "   ", \
                       hostname + " ", \
                       site_name))

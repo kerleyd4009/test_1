@@ -2,6 +2,8 @@ import json
 import requests
 import ijson
 
+# SSD Wearout Calculation here
+# https://wiki.infinidat.com/display/SUP/SSD+replacement+due+to+low+wear-out+policy
 
 ##########################  This func pulls all the keys in a json output    ####################
 # https://hackersandslackers.com/extract-data-from-complex-json-python/
@@ -65,7 +67,7 @@ for i in data['result']:
         ##########################  Enter New Extraction (example below) Here ######################
 
         ssd_params = "system_serial=eq:" + str(
-            sn) + "&fields=system_serial,index,parent_index,vendor,model,serial_number,wearout"
+            sn) + "&fields=system_serial,index,parent_index,vendor,model,serial_number,tb_capacity,type,wearout,node_model,percent_lifetime_used"
         ssd_url = "https://inventory.infinidat.com/api/rest/components/localdrive/"
         ssd_node = requests.get(ssd_url, headers=headers, params=ssd_params)
         ssd_drv_data = ssd_node.json()['result']
@@ -73,9 +75,10 @@ for i in data['result']:
         for myi in ssd_drv_data:
             this_ssd_name = "N" + str(myi['parent_index']) + "D" + str(myi['index'])
             ssd_serial_number = str(myi['serial_number'])
-            print(str(sn),"   ",myi['wearout'], myi['vendor'], myi['model'],this_ssd_name, ssd_serial_number)
+            print(str(sn), myi['node_model'], myi['type'], this_ssd_name, "   ", myi['wearout'], myi['percent_lifetime_used'],
+                  myi['vendor'], myi['model'], myi['type'], myi['tb_capacity'],  ssd_serial_number)
 
-            #print('{:6}' '{:9}' '{:30}' '{:20}' '{}' '{}'
+            # print('{:6}' '{:9}' '{:30}' '{:20}' '{}' '{}'
             #      .format(myi['wearout'],
             #              myi['vendor'],
             #              myi['model'],
