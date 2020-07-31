@@ -105,8 +105,9 @@ if args.serialnum != 0:
     for masers in args.serialnum:
         for site_name, serial in mySite_Arrays.items():
             if masers in serial:
-                print(site_name)
-                #ShowInfo(site_name, mysn)
+                #print(site_name)
+                mysn = [masers]
+                ShowInfo(site_name, mysn)
 
 
 else:
